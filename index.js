@@ -25,8 +25,11 @@ async function run() {
         const reviewsCollection = client.db('tuitionService').collection('reviews');
 
         // get only 3 services from the database...............
-        app.get('/', (req, res) => {
-            res.send("api is running");
+        app.get('/', async (req, res) => {
+            const query = {};
+            const cursor = servicesCollection.find(query);
+            const services = await cursor.limit(3).toArray();
+            res.send(services);
         })
 
         // get all the services from the database...................
