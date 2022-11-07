@@ -24,11 +24,12 @@ async function run() {
         const servicesCollection = client.db('tuitionService').collection('services');
         const reviewsCollection = client.db('tuitionService').collection('reviews');
 
+        // get only 3 services from the database...............
         app.get('/', (req, res) => {
             res.send("api is running");
         })
 
-        // get all the services from the database
+        // get all the services from the database...................
         app.get('/services', async (req, res) => {
             const query = {};
             const cursor = servicesCollection.find(query);
@@ -37,12 +38,19 @@ async function run() {
         })
 
 
-        // get a single service from the database
+        // get a single service from the database...................
         app.get('/services/:id', async (req, res) => {
             const id = req.params.id;
             const query = { _id: ObjectId(id) };
             const service = await servicesCollection.findOne(query);
             res.send(service);
+        })
+
+        // create a services..................
+        app.post('/services', async (req, res) => {
+            const service = req.body;
+            const result = await servicesCollection.insertOne(service);
+            res.send(result);
         })
 
 
