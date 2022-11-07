@@ -56,6 +56,17 @@ async function run() {
             res.send(result);
         })
 
+
+        // get all the reviews of a specific services
+        app.get('/servicesreviews/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { serviceId: req.params.id };
+            const cursor = reviewsCollection.find(query);
+            const reviews = await cursor.toArray();
+            res.send(reviews);
+        })
+
+
         // create a review for services
         app.post('/reviews', async (req, res) => {
             const review = req.body;
@@ -64,14 +75,32 @@ async function run() {
         })
 
 
-        // get all the reviews of a specific services
-        app.get('/reviews/:id', async (req, res) => {
+
+        // delete a single review from the database
+        app.delete('/reviews/:id', async (req, res) => {
             const id = req.params.id;
-            console.log("id: ", id);
-            const query = { serviceId: req.params.id };
-            const cursor = reviewsCollection.find(query);
-            const reviews = await cursor.toArray();
-            res.send(reviews);
+            console.log("id=", id);
+            const query = { _id: ObjectId(id) };
+            const result = await reviewsCollection.deleteOne(query);
+            res.send(result);
+        })
+
+        // update a single review from the database
+        app.patch('/reviews/:id', async (req, res) => {
+            const id = req.params.id;
+            console.log("id=", id);
+            const updatedInfo = req.body;
+            const query = { _id: ObjectId(id) };
+            const updatedDoc = {
+                $set: {
+                    reviewText: updatedInfo.reviewText,
+                    ratings: updatedInfo.ratings
+                }
+            }
+
+            const result = await reviewsCollection.updateOne(query, updatedDoc);
+            res.send(result);
+
         })
 
 
