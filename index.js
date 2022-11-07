@@ -28,6 +28,14 @@ async function run() {
             res.send("api is running");
         })
 
+        // get all the services from the database
+        app.get('/services', async (req, res) => {
+            const query = {};
+            const cursor = servicesCollection.find(query);
+            const services = await cursor.toArray();
+            res.send(services);
+        })
+
 
 
 
