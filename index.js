@@ -67,6 +67,17 @@ async function run() {
         })
 
 
+        // get all the reviews of a specific user
+        app.get('/userreviews', async (req, res) => {
+            const email = req.query.email;
+            console.log("email:", email);
+            const query = { reviewerEmail: req.query.email };
+            const cursor = reviewsCollection.find(query);
+            const result = await cursor.toArray();
+            res.send(result);
+        })
+
+
         // create a review for services
         app.post('/reviews', async (req, res) => {
             const review = req.body;
