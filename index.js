@@ -18,11 +18,40 @@ const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@clu
 
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 
+
+function verifyJWT(req, res, next) {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+        return res.status(401).send({ message: 'unauthorized access' })
+    }
+
+    const token = authHeader.split(' ')[1];
+
+
+    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, function (err, decoded) {
+        if (err) {
+            res.status(403).send({ message: 'Forbidden access' })
+        }
+        req.decoded = decoded;
+        next();
+    })
+}
+
+
+
 async function run() {
     try {
 
         const servicesCollection = client.db('tuitionService').collection('services');
         const reviewsCollection = client.db('tuitionService').collection('reviews');
+
+
+        // it generates a token and send it to frontend
+        app.post('/jwt', (req, res) => {
+            const user = req.body;
+            const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' })
+            res.send({ token });
+        })
 
         // get only 3 services from the database...............
         app.get('/', async (req, res) => {
@@ -41,6 +70,14 @@ async function run() {
         })
 
 
+        // create a services..................
+        app.post('/services', verifyJWT, async (req, res) => {
+            const service = req.body;
+            const result = await servicesCollection.insertOne(service);
+            res.send(result);
+        })
+
+
         // get a single service from the database...................
         app.get('/services/:id', async (req, res) => {
             const id = req.params.id;
@@ -49,15 +86,9 @@ async function run() {
             res.send(service);
         })
 
-        // create a services..................
-        app.post('/services', async (req, res) => {
-            const service = req.body;
-            const result = await servicesCollection.insertOne(service);
-            res.send(result);
-        })
 
 
-        // get all the reviews of a specific services
+        // get all the reviews of a specific services. it receive a service id..............
         app.get('/servicesreviews/:id', async (req, res) => {
             const id = req.params.id;
             const query = { serviceId: req.params.id };
@@ -67,8 +98,8 @@ async function run() {
         })
 
 
-        // get all the reviews of a specific user
-        app.get('/userreviews', async (req, res) => {
+        // get all the reviews of a specific user. it receives a email by query........................
+        app.get('/userreviews', verifyJWT, async (req, res) => {
             const email = req.query.email;
             console.log("email:", email);
             const query = { reviewerEmail: req.query.email };
@@ -79,7 +110,7 @@ async function run() {
 
 
         // create a review for services
-        app.post('/reviews', async (req, res) => {
+        app.post('/reviews', verifyJWT, async (req, res) => {
             const review = req.body;
             const result = await reviewsCollection.insertOne(review);
             res.send(result);
@@ -97,7 +128,7 @@ async function run() {
 
 
         // delete a single review from the database
-        app.delete('/reviews/:id', async (req, res) => {
+        app.delete('/reviews/:id', verifyJWT, async (req, res) => {
             const id = req.params.id;
             console.log("id=", id);
             const query = { _id: ObjectId(id) };
@@ -106,15 +137,18 @@ async function run() {
         })
 
         // update a single review from the database
-        app.patch('/reviews/:id', async (req, res) => {
+        app.put('/reviews/:id', verifyJWT, async (req, res) => {
             const id = req.params.id;
-            console.log("id=", id);
             const updatedInfo = req.body;
             const query = { _id: ObjectId(id) };
             const updatedDoc = {
                 $set: {
                     reviewText: updatedInfo.reviewText,
-                    ratings: updatedInfo.ratings
+                    ratings: updatedInfo.ratings,
+                    serviceId: updatedInfo.serviceId,
+                    reviewerEmail: updatedInfo.reviewerEmail,
+                    reviewerImage: updatedInfo.reviewerImage,
+                    dateOfReview: updatedInfo.dateOfReview,
                 }
             }
 
