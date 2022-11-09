@@ -30,7 +30,7 @@ function verifyJWT(req, res, next) {
 
     jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, function (err, decoded) {
         if (err) {
-            res.status(403).send({ message: 'Forbidden access' })
+            return res.status(403).send({ message: 'Forbidden access' })
         }
         req.decoded = decoded;
         next();
@@ -92,7 +92,7 @@ async function run() {
         app.get('/servicesreviews/:id', async (req, res) => {
             const id = req.params.id;
             const query = { serviceId: req.params.id };
-            const cursor = reviewsCollection.find(query);
+            const cursor = reviewsCollection.find(query).sort({ "_id": -1 });
             const reviews = await cursor.toArray();
             res.send(reviews);
         })
@@ -101,9 +101,8 @@ async function run() {
         // get all the reviews of a specific user. it receives a email by query........................
         app.get('/userreviews', verifyJWT, async (req, res) => {
             const email = req.query.email;
-            console.log("email:", email);
             const query = { reviewerEmail: req.query.email };
-            const cursor = reviewsCollection.find(query);
+            const cursor = reviewsCollection.find(query).sort({ "_id": -1 });
             const result = await cursor.toArray();
             res.send(result);
         })
@@ -130,7 +129,6 @@ async function run() {
         // delete a single review from the database
         app.delete('/reviews/:id', verifyJWT, async (req, res) => {
             const id = req.params.id;
-            console.log("id=", id);
             const query = { _id: ObjectId(id) };
             const result = await reviewsCollection.deleteOne(query);
             res.send(result);
